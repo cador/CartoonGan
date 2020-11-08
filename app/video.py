@@ -15,12 +15,16 @@ def cut(source, target, internal, coordinates):
     start, end = internal.split(':')
     start = tuple([int(x) for x in start.split(',')])
     end = tuple([int(x) for x in end.split(',')])
-    left_up, right_down = coordinates.split(':')
-    left_up = tuple([float(x) for x in left_up.split(',')])
-    right_down = tuple([float(x) for x in right_down.split(',')])
-    clip = (VideoFileClip(source).subclip(start, end).crop(x1=left_up[0], y1=left_up[1],
-                                                           x2=right_down[0], y2=right_down[1]))
-    clip.write_videofile(target)
+    if coordinates is None:
+        clip = (VideoFileClip(source).subclip(start, end))
+        clip.write_videofile(target)
+    else:
+        left_up, right_down = coordinates.split(':')
+        left_up = tuple([float(x) for x in left_up.split(',')])
+        right_down = tuple([float(x) for x in right_down.split(',')])
+        clip = (VideoFileClip(source).subclip(start, end).crop(x1=left_up[0], y1=left_up[1],
+                                                               x2=right_down[0], y2=right_down[1]))
+        clip.write_videofile(target)
 
 
 def generate_images(source, target_dir, fps=None):
@@ -32,7 +36,7 @@ def generate_images(source, target_dir, fps=None):
     :return:
     """
     clip = VideoFileClip(source)
-    clip.write_images_sequence("%s/frame%05d.png" % target_dir, fps=fps)
+    clip.write_images_sequence("{a}/frame%05d.png".format(a=target_dir), fps=fps)
 
 
 def generate_videos(target, from_dir, codec=None, audio_codec=None, fps=None, audio=False, source=None, internal=None):
@@ -49,12 +53,17 @@ def generate_videos(target, from_dir, codec=None, audio_codec=None, fps=None, au
     :return:
     """
     clip = ImageSequenceClip(from_dir, fps=fps)
+    args = {"filename": target, "fps": fps, "codec": codec, "audio_codec": audio_codec}
+    if codec is None:
+        del args['codec']
+    if audio_codec is None:
+        del args['audio_codec']
     if not audio:
-        clip.write_videofile(target, fps=fps, codec=codec, audio_codec=audio_codec)
+        clip.write_videofile(**args)
     else:
         start, end = internal.split(':')
         start = tuple([int(x) for x in start.split(',')])
         end = tuple([int(x) for x in end.split(',')])
         audio_clip = (AudioFileClip(source).subclip(start, end))
         out = clip.set_audio(audio_clip)
-        out.write_videofile(target, fps=fps, codec=codec, audio_codec=audio_codec)
+        out.write_videofile(**args)
